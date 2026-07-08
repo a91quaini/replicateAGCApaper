@@ -9,3 +9,5 @@
 ^figures($|/)
 ^results($|/)
 ^data-raw/empirics/osap/CtsPredictorQuintileVW[.]zip$
+^data/empirics/ff/.*[.]csv$
+^data/empirics/osap/.*[.]csv$

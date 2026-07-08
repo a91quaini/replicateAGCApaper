@@ -7,6 +7,8 @@
 .DS_Store
 
 # Generated replication outputs and figures.
+data/empirics/ff/*.csv
+data/empirics/osap/*.csv
 inst/empirics/results/
 inst/simulations/results/
 figures/

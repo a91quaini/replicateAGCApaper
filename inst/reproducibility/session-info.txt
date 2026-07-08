@@ -1,0 +1,27 @@
+Generated: 2026-07-08
+Repository: replicateAGCApaper
+
+Companion package:
+AGCA4extremes 0.1.0 /Users/albertoquaini/Library/R/arm64/4.6/library/AGCA4extremes
+
+Session info:
+R version 4.6.0 (2026-04-24)
+Platform: aarch64-apple-darwin23
+Running under: macOS Sequoia 15.6.1
+
+Matrix products: default
+BLAS:   /Library/Frameworks/R.framework/Versions/4.6/Resources/lib/libRblas.0.dylib 
+LAPACK: /Library/Frameworks/R.framework/Versions/4.6/Resources/lib/libRlapack.dylib;  LAPACK version 3.12.1
+
+locale:
+[1] C.UTF-8/C.UTF-8/C.UTF-8/C/C.UTF-8/C.UTF-8
+
+time zone: Europe/Amsterdam
+tzcode source: internal
+
+attached base packages:
+[1] stats     graphics  grDevices utils     datasets  methods   base     
+
+loaded via a namespace (and not attached):
+[1] compiler_4.6.0      tools_4.6.0         Rcpp_1.1.1-1.1     
+[4] AGCA4extremes_0.1.0

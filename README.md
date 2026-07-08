@@ -2,18 +2,21 @@
 
 Author: Alberto Quaini
 
-`replicateAGCApaper` is the replication compendium for the paper on anchored
-geodesic component analysis (AGCA) for multivariate extremes.
+`replicateAGCApaper` is an R research compendium for reproducing the
+simulations and empirical analyses in the paper on anchored geodesic component
+analysis (AGCA) for multivariate extremes.
 
-This repository is intentionally separate from `AGCA4extremes`.
+This repository is intentionally separate from `AGCA4extremes`:
 
-- `AGCA4extremes` is the reusable, CRAN-oriented methods package.
-- `replicateAGCApaper` stores the paper-specific raw data, transformed data,
-  scripts, generated results, and figures.
+- `AGCA4extremes` is the reusable methods package.
+- `replicateAGCApaper` contains the paper-specific data preparation scripts,
+  simulation scripts, empirical scripts, generated-data conventions, and
+  replication entry points.
 
-The compendium is large because it includes the raw Open Source Asset Pricing
-daily portfolio archive and the generated empirical outputs. It is not intended
-for CRAN submission.
+This Git repository is a lightweight source repository. Generated result
+directories and the large Open Source Asset Pricing raw archive are ignored so
+that the repository can be hosted on GitHub. The scripts regenerate those files
+locally.
 
 ## Development Assistance
 
@@ -22,26 +25,51 @@ code scaffolding, refactoring, documentation, and tests. All methodological
 choices, validation, final code, and responsibility for the package remain with
 the author.
 
-## Structure
+## Quick Start
+
+From the repository root, install the companion package and this compendium:
+
+```sh
+R CMD INSTALL ../AGCA4extremes
+R CMD INSTALL .
+```
+
+Then run the full workflow:
+
+```sh
+make all
+```
+
+Equivalent direct commands are:
+
+```sh
+Rscript scripts/run_data.R
+Rscript scripts/run_simulations.R
+Rscript scripts/run_empirics.R
+```
+
+## Repository Structure
 
 ```text
 data-raw/
   empirics/
-    ff/       # original Fama-French zip archives
-    osap/     # original Open Source Asset Pricing zip archive
+    ff/       # tracked Fama-French source zip archives
+    osap/     # local-only OSAP source zip archive, downloaded if missing
 
 data/
   empirics/
-    ff/       # transformed Fama-French RDS/CSV files
-    osap/     # transformed OSAP RDS/CSV files
+    ff/       # tracked transformed Fama-French RDS file
+    osap/     # tracked transformed OSAP RDS file
 
 inst/
   empirics/
-    scripts/  # paper-specific empirical scripts
-    results/  # generated empirical CSV/PDF outputs
+    scripts/  # empirical analysis and reporting scripts
+    results/  # generated empirical CSV/PDF outputs, ignored by Git
   simulations/
-    scripts/  # paper-specific simulation scripts
-    results/  # generated simulation CSV/PDF outputs
+    scripts/  # simulation scripts
+    results/  # generated simulation CSV/PDF outputs, ignored by Git
+  reproducibility/
+    session-info.txt
 
 R/
   GeodesicExtreme.R  # legacy helper used by the paper scripts
@@ -55,57 +83,209 @@ scripts/
   run_all.R
 ```
 
-## Dependencies
+## Data Availability and Provenance
 
-Install the companion methods package first:
+All empirical data sources used here are public third-party financial datasets.
+The transformed analysis datasets needed by the empirical scripts are included
+under `data/empirics/`. The large OSAP source archive is not tracked in Git
+because it exceeds GitHub's file-size limit, but the data script downloads it
+when needed.
 
-```r
-devtools::install("../AGCA4extremes")
-```
+The author has legitimate access to the public data used by this compendium.
+Third-party data remain subject to the terms of their original providers; this
+repository does not relicense those source data.
 
-The historical paper scripts also use standard plotting and data-manipulation
-packages available in the project R library. If a script reports a missing
-package, install it before rerunning the full workflow.
+| Data source | Files used by this compendium | GitHub availability | Provenance notes |
+| --- | --- | --- | --- |
+| Fama-French daily 2 x 3 portfolio sorts | `data-raw/empirics/ff/*.zip`; `data/empirics/ff/ff_2x3_sorts_daily.rds` | Raw zips and transformed RDS are tracked | Download URLs are encoded in `inst/empirics/scripts/data_sorts_2x3_daily.R` and point to the Kenneth French Data Library. |
+| Open Source Asset Pricing daily value-weighted quintile portfolios | `data-raw/empirics/osap/CtsPredictorQuintileVW.zip`; `data/empirics/osap/osap_daily_quintile_vw.rds` | Transformed RDS is tracked; raw zip is local-only and ignored | The script uses OSAP release `2025.10` and downloads from the OSAP data location when the raw zip is missing. |
+| Simulated data | `inst/simulations/results/**` | Generated locally and ignored | No external source data are used; scripts generate observations from deterministic pseudorandom seeds. |
 
-## Reproducing the Data
+## Dataset List
 
-Small raw downloaded archives are stored in `data-raw/`. The large Open Source
-Asset Pricing archive is downloaded by the data script when missing because it
-exceeds GitHub's file-size limit. To regenerate the transformed empirical
-datasets:
+Tracked source and analysis data:
 
-```sh
-Rscript scripts/run_data.R
-```
+| File | Source | Format | Role |
+| --- | --- | --- | --- |
+| `data-raw/empirics/ff/6_Portfolios_2x3_daily_CSV.zip` | Kenneth French Data Library | ZIP/CSV | Raw daily size/book-to-market 2 x 3 portfolios. |
+| `data-raw/empirics/ff/6_Portfolios_ME_OP_2x3_daily_CSV.zip` | Kenneth French Data Library | ZIP/CSV | Raw daily size/operating-profitability 2 x 3 portfolios. |
+| `data-raw/empirics/ff/6_Portfolios_ME_INV_2x3_daily_CSV.zip` | Kenneth French Data Library | ZIP/CSV | Raw daily size/investment 2 x 3 portfolios. |
+| `data-raw/empirics/ff/6_Portfolios_ME_Prior_12_2_Daily_CSV.zip` | Kenneth French Data Library | ZIP/CSV | Raw daily size/momentum 2 x 3 portfolios. |
+| `data/empirics/ff/ff_2x3_sorts_daily.rds` | Derived from Fama-French files | RDS | Transformed Fama-French returns, losses, complete panels, and portfolio metadata. |
+| `data/empirics/osap/osap_daily_quintile_vw.rds` | Derived from OSAP files | RDS | Transformed OSAP returns, losses, complete panels, and portfolio metadata. |
 
-The data scripts write transformed files to `data/empirics/ff` and
-`data/empirics/osap`. Use `--refresh` when running the underlying scripts if
-you want to redownload the raw archives.
+Generated data and results:
 
-## Reproducing the Simulations
+| Path | Generated by | Contents |
+| --- | --- | --- |
+| `data/empirics/ff/*.csv` | `inst/empirics/scripts/data_sorts_2x3_daily.R` | Optional CSV exports of transformed Fama-French returns, losses, and metadata. |
+| `data/empirics/osap/*.csv` | `inst/empirics/scripts/data_osap_daily_quintile_vw.R` | Optional CSV exports of transformed OSAP returns, losses, and metadata. |
+| `inst/simulations/results/` | `scripts/run_simulations.R` | Simulation CSV summaries and PDF diagnostics. |
+| `inst/empirics/results/` | `scripts/run_empirics.R` | Empirical CSV summaries and PDF figures. |
 
-```sh
-Rscript scripts/run_simulations.R
-```
+## Computational Requirements
 
-The default simulation scripts include bootstrap and finite-sample loops and
-can take time. The underlying scripts accept command-line options such as
-`--skip-bootstrap`, `--bootstrap-reps=`, `--reps=`, `--n=`, and `--k=`.
+### Software
 
-## Reproducing the Empirical Figures and Tables
+- R `>= 4.1.0`.
+- `AGCA4extremes`, installed from the sibling directory `../AGCA4extremes` for
+  the local development setup.
+- A C++17 toolchain is needed when installing `AGCA4extremes` from source.
+- The system command `curl` is needed if data scripts must download missing raw
+  archives.
 
-```sh
-Rscript scripts/run_empirics.R
-```
+The latest local verification was run on July 8, 2026 with R 4.6.0 on macOS
+Darwin 24.6.0 and `AGCA4extremes` 0.1.0. The captured R session is stored in
+`inst/reproducibility/session-info.txt`.
 
-Outputs are written to `inst/empirics/results`.
+### Runtime and Storage
 
-## Full Workflow
+On the latest local verification, with empirical data already present:
 
-```sh
-Rscript scripts/run_all.R
-```
+- `Rscript scripts/run_simulations.R` completed in under one minute.
+- `Rscript scripts/run_empirics.R` completed in about two minutes.
+- The full workflow should normally fit in the `<10 minutes` category on a
+  current desktop or laptop, excluding network download time.
 
-The full workflow regenerates transformed data, simulations, and empirical
-outputs. Existing results are included so that the paper can be inspected
-without rerunning the complete computation.
+Approximate local storage requirements:
+
+- Git-tracked source and transformed data: tens of MB.
+- Local OSAP raw archive: about 161 MB.
+- Generated result directories: about 20 MB after the current full workflow.
+- A practical replication workspace should reserve at least 250 MB.
+
+### Controlled Randomness
+
+All stochastic scripts set deterministic seeds.
+
+| Script | Default seed | Main stochastic work |
+| --- | --- | --- |
+| `inst/simulations/scripts/standard_simulations_3d.R` | `20260627` | 3D simulations, bootstrap intervals, finite-sample sensitivity. |
+| `inst/simulations/scripts/standard_simulations.R` | `20260627` | 10D simulation, population Monte Carlo approximation, bootstrap stability. |
+| `inst/empirics/scripts/portfolio_tail_functionals_agca.R` | `20260707` | Random portfolio functionals and bootstrap summaries. |
+| `inst/empirics/scripts/portfolio_agca_reporting_figures.R` | `20260707` | Bootstrap variation and loading summaries. |
+
+The simulation scripts accept command-line overrides such as `--seed=`,
+`--bootstrap-reps=`, `--skip-bootstrap`, `--reps=`, `--n=`, and `--k=`.
+
+## Description of Programs and Code
+
+Top-level entry points:
+
+| Program | Purpose | Main outputs |
+| --- | --- | --- |
+| `scripts/run_data.R` | Rebuild transformed empirical data from raw archives. | `data/empirics/ff/`, `data/empirics/osap/`. |
+| `scripts/run_simulations.R` | Run all standard simulation workflows. | `inst/simulations/results/standard_simulation_output/` and `inst/simulations/results/standard_simulation_output_3d/`. |
+| `scripts/run_empirics.R` | Run portfolio tail-function diagnostics and reporting figures. | `inst/empirics/results/portfolio_tail_functionals_agca/` and `inst/empirics/results/portfolio_agca_reporting/`. |
+| `scripts/run_all.R` | Run data preparation, simulations, and empirics in sequence. | All generated data and results. |
+
+Supporting code:
+
+| Path | Purpose |
+| --- | --- |
+| `R/GeodesicExtreme.R` | Legacy dependency-free AGCA helper used by the paper scripts. |
+| `R/paths.R` | Package path helpers. |
+| `R/run.R` | Exported R wrappers for running empirical and simulation scripts. |
+| `inst/empirics/scripts/data_sorts_2x3_daily.R` | Downloads/parses Fama-French daily portfolio sorts. |
+| `inst/empirics/scripts/data_osap_daily_quintile_vw.R` | Downloads/parses OSAP daily value-weighted quintile portfolios. |
+| `inst/simulations/scripts/standard_simulations_3d.R` | Generates the 3D simulation study outputs. |
+| `inst/simulations/scripts/standard_simulations.R` | Generates the 10D simulation study outputs. |
+| `inst/empirics/scripts/portfolio_tail_functionals_agca.R` | Computes empirical portfolio functional diagnostics. |
+| `inst/empirics/scripts/portfolio_agca_reporting_figures.R` | Produces empirical reporting summaries and figures. |
+
+## Instructions to Replicators
+
+1. Clone this repository and set the working directory to the repository root.
+
+2. Install the companion package and this compendium:
+
+   ```sh
+   R CMD INSTALL ../AGCA4extremes
+   R CMD INSTALL .
+   ```
+
+   If the sibling directory is unavailable, install `AGCA4extremes` from its
+   public repository before installing this compendium:
+
+   ```r
+   install.packages("remotes")
+   remotes::install_github("a91quaini/AGCA4extremes")
+   ```
+
+3. Rebuild the empirical analysis data:
+
+   ```sh
+   make data
+   ```
+
+   If the OSAP download fails because Google Drive returns a confirmation page,
+   manually download `DailyPortfolios/CtsPredictorQuintileVW.zip` from
+   `https://www.openassetpricing.com/data/` and place it at
+   `data-raw/empirics/osap/CtsPredictorQuintileVW.zip`.
+
+4. Rebuild the simulation outputs:
+
+   ```sh
+   make simulations
+   ```
+
+5. Rebuild the empirical figures and summaries:
+
+   ```sh
+   make empirics
+   ```
+
+6. Alternatively, run the complete workflow in one command:
+
+   ```sh
+   make all
+   ```
+
+The empirical scripts copy generated PDFs into
+`../full_paper/R/empirics/empirics_output/` when that manuscript directory
+exists. This staging step is optional for reproducing the package outputs.
+
+## Output Mapping
+
+The current full workflow generates 120 result files: 59 CSV files and 61 PDF
+files.
+
+| Output path | Produced by | File count | Use |
+| --- | --- | ---: | --- |
+| `inst/simulations/results/standard_simulation_output/` | `inst/simulations/scripts/standard_simulations.R` | 34 | 10D simulation summaries and diagnostic figures. |
+| `inst/simulations/results/standard_simulation_output_3d/` | `inst/simulations/scripts/standard_simulations_3d.R` | 52 | 3D simulation summaries, model comparisons, and finite-sample sensitivity. |
+| `inst/empirics/results/portfolio_tail_functionals_agca/` | `inst/empirics/scripts/portfolio_tail_functionals_agca.R` | 20 | Portfolio functional error summaries and figures. |
+| `inst/empirics/results/portfolio_agca_reporting/` | `inst/empirics/scripts/portfolio_agca_reporting_figures.R` | 14 | Empirical AGCA reporting summaries and figures. |
+
+For journal submission, add a manuscript-specific table mapping each paper
+figure, table, or in-text number to the output file above and the script that
+creates it.
+
+## Verification Status
+
+On July 8, 2026, the package was checked after reinstalling the changed
+`AGCA4extremes` package and rerunning simulations and empirics. The regenerated
+outputs were compared to the legacy outputs under `../R/`:
+
+- File inventories matched exactly for all four output roots.
+- All 59 CSV files matched exactly, with maximum absolute numeric difference
+  equal to `0`.
+- All 61 PDFs matched after normalizing only the PDF `/CreationDate` and
+  `/ModDate` metadata fields.
+
+## License
+
+The package code is licensed under GPL-3, as declared in `DESCRIPTION`.
+Third-party data retain the terms and licenses of their original providers.
+
+## References
+
+Kenneth French Data Library. Daily 2 x 3 portfolio archives. Download URLs are
+listed in `inst/empirics/scripts/data_sorts_2x3_daily.R`.
+
+Open Source Asset Pricing. Daily value-weighted continuous-predictor quintile
+portfolio archive. Data access page: `https://www.openassetpricing.com/data/`.
+
+Social Science Data Editors. Template README and guidance for replication
+packages:
+`https://social-science-data-editors.github.io/template_README/template-README.html`.
