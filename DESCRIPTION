@@ -1,0 +1,23 @@
+Package: replicateAGCApaper
+Title: Replication Compendium for Anchored Geodesic Component Analysis
+Version: 0.1.0
+Authors@R:
+    person("Alberto", "Quaini", email = "alberto91quaini@gmail.com",
+           role = c("aut", "cre"))
+Description: Research compendium for reproducing the simulations and empirical
+    analyses in the paper on anchored geodesic component analysis for
+    multivariate extremes. This package is not intended for CRAN distribution;
+    it stores raw data, transformed data, generated results, figures, and
+    paper-specific scripts. The reusable methodology is implemented in the
+    companion package AGCA4extremes.
+License: GPL-3
+Encoding: UTF-8
+Depends:
+    R (>= 4.1.0)
+Imports:
+    AGCA4extremes
+Suggests:
+    testthat (>= 3.0.0)
+Remotes:
+    local::../AGCA4extremes
+Config/testthat/edition: 3

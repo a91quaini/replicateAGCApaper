@@ -1,0 +1,16 @@
+.Rproj.user
+.Rhistory
+.RData
+.Ruserdata
+*.Rcheck
+*.tar.gz
+.DS_Store
+
+# Generated replication outputs and figures.
+inst/empirics/results/
+inst/simulations/results/
+figures/
+results/
+
+# Large raw archives downloaded by data scripts.
+data-raw/empirics/osap/CtsPredictorQuintileVW.zip

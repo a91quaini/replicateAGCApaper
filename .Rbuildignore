@@ -1,0 +1,11 @@
+^replicateAGCApaper[.]Rproj$
+^\.Rproj\.user$
+^\.github$
+^README[.]Rmd$
+^.*[.]Rcheck$
+^.*[.]tar[.]gz$
+^inst/empirics/results($|/)
+^inst/simulations/results($|/)
+^figures($|/)
+^results($|/)
+^data-raw/empirics/osap/CtsPredictorQuintileVW[.]zip$
