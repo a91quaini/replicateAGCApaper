@@ -1,3 +1,5 @@
+# Author: Alberto Quaini
+
 #' Run the portfolio empirical scripts
 #'
 #' @param scripts Character vector selecting scripts. Use `"all"` to run both

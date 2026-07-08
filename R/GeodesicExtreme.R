@@ -1,3 +1,5 @@
+# Author: Alberto Quaini
+
 # Anchored geodesic analysis for Euclidean-spherical extreme directions.
 # The functions in this file are intentionally dependency-free.
 

@@ -1,5 +1,7 @@
 # replicateAGCApaper
 
+Author: Alberto Quaini
+
 `replicateAGCApaper` is the replication compendium for the paper on anchored
 geodesic component analysis (AGCA) for multivariate extremes.
 
@@ -12,6 +14,13 @@ This repository is intentionally separate from `AGCA4extremes`.
 The compendium is large because it includes the raw Open Source Asset Pricing
 daily portfolio archive and the generated empirical outputs. It is not intended
 for CRAN submission.
+
+## Development Assistance
+
+OpenAI Codex was used as a programming assistant during development, mainly for
+code scaffolding, refactoring, documentation, and tests. All methodological
+choices, validation, final code, and responsibility for the package remain with
+the author.
 
 ## Structure
 
