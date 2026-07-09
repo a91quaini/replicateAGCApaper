@@ -1,6 +1,6 @@
 # Author: Alberto Quaini
 
-#' Locate files in the AGCA paper replication compendium
+#' Locate files in the paper replication compendium
 #'
 #' @param ... Path components below the replication-compendium root.
 #' @return An absolute path.

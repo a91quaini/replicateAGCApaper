@@ -3,8 +3,8 @@
 Author: Alberto Quaini
 
 `replicateAGCApaper` is an R research compendium for reproducing the
-simulations and empirical analyses in the paper on anchored geodesic component
-analysis (AGCA) for multivariate extremes.
+simulations and empirical analyses in *Anchored Geodesic Analysis for
+Multivariate Extremes*.
 
 This repository is intentionally separate from `AGCA4extremes`:
 
