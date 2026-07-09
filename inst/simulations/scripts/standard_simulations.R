@@ -47,6 +47,20 @@ arg_flag <- function(name) {
   any(args %in% paste0("--", name))
 }
 
+parse_integer_list <- function(value, name) {
+  parts <- strsplit(value, ",", fixed = TRUE)[[1L]]
+  parts <- trimws(parts)
+  if (length(parts) == 0L || any(!nzchar(parts))) {
+    stop(name, " must be a comma-separated list of integers.", call. = FALSE)
+  }
+  numeric_values <- suppressWarnings(as.numeric(parts))
+  values <- as.integer(numeric_values)
+  if (any(is.na(values)) || any(values != numeric_values)) {
+    stop(name, " must be a comma-separated list of integers.", call. = FALSE)
+  }
+  unique(values)
+}
+
 seed <- as.integer(get_arg("seed", "20260627"))
 main_n <- as.integer(get_arg("n", "10000"))
 main_k <- as.integer(get_arg("k", "500"))
@@ -58,11 +72,34 @@ population_seed <- as.integer(get_arg(
   "population-seed",
   as.character(seed + 100000L)
 ))
+coverage_seed <- as.integer(get_arg("coverage-seed", "20260709"))
+coverage_reps <- as.integer(get_arg("coverage-reps", "5000"))
+coverage_population_n <- as.integer(get_arg("coverage-population-n", "500000"))
+coverage_population_seed <- as.integer(get_arg(
+  "coverage-population-seed",
+  as.character(coverage_seed + 200000L)
+))
+coverage_calibration_n <- as.integer(get_arg("coverage-calibration-n", "500000"))
+coverage_calibration_seed <- as.integer(get_arg(
+  "coverage-calibration-seed",
+  as.character(coverage_seed + 100000L)
+))
+coverage_calibration_tail_k_arg <- get_arg("coverage-calibration-tail-k", NA_character_)
+coverage_calibration_tail_k <- if (is.na(coverage_calibration_tail_k_arg)) {
+  NA_integer_
+} else {
+  as.integer(coverage_calibration_tail_k_arg)
+}
+coverage_ranks <- parse_integer_list(get_arg("coverage-ranks", "2"), "--coverage-ranks")
+coverage_conf_level <- as.numeric(get_arg("coverage-conf-level", "0.95"))
+coverage_checkpoint_every <- as.integer(get_arg("coverage-checkpoint-every", "50"))
+coverage_progress_every <- as.integer(get_arg("coverage-progress-every", "25"))
 logistic_theta <- as.numeric(get_arg("theta", "0.45"))
 finite_tau <- as.numeric(get_arg("tau", "0.25"))
 axis9_scale <- as.numeric(get_arg("axis9-scale", "1.00"))
 axis10_scale <- as.numeric(get_arg("axis10-scale", "1.00"))
 skip_bootstrap <- arg_flag("skip-bootstrap")
+skip_coverage <- arg_flag("skip-coverage")
 use_rank_transform <- !arg_flag("raw-margins")
 
 if (!is.finite(seed)) {
@@ -88,6 +125,48 @@ if (!is.finite(population_n) || population_n < 100L) {
 }
 if (!is.finite(population_seed)) {
   stop("--population-seed must be an integer.", call. = FALSE)
+}
+if (!is.finite(coverage_seed)) {
+  stop("--coverage-seed must be an integer.", call. = FALSE)
+}
+if (!is.finite(coverage_reps) || coverage_reps < 1L) {
+  stop("--coverage-reps must be a positive integer.", call. = FALSE)
+}
+if (!is.finite(coverage_population_n) || coverage_population_n < 100L) {
+  stop("--coverage-population-n must be an integer at least 100.", call. = FALSE)
+}
+if (!is.finite(coverage_population_seed)) {
+  stop("--coverage-population-seed must be an integer.", call. = FALSE)
+}
+if (!is.finite(coverage_calibration_n) || coverage_calibration_n < 100L) {
+  stop("--coverage-calibration-n must be an integer at least 100.", call. = FALSE)
+}
+if (!is.na(coverage_calibration_tail_k) &&
+    (!is.finite(coverage_calibration_tail_k) ||
+     coverage_calibration_tail_k < 10L ||
+     coverage_calibration_tail_k >= coverage_calibration_n)) {
+  stop(
+    "--coverage-calibration-tail-k must be between 10 and ",
+    "coverage-calibration-n - 1.",
+    call. = FALSE
+  )
+}
+if (!is.finite(coverage_calibration_seed)) {
+  stop("--coverage-calibration-seed must be an integer.", call. = FALSE)
+}
+if (any(coverage_ranks < 1L) || any(coverage_ranks > 8L)) {
+  stop("--coverage-ranks must contain integers between 1 and 8.", call. = FALSE)
+}
+if (!is.finite(coverage_conf_level) ||
+    coverage_conf_level <= 0 ||
+    coverage_conf_level >= 1) {
+  stop("--coverage-conf-level must lie in (0, 1).", call. = FALSE)
+}
+if (!is.finite(coverage_checkpoint_every) || coverage_checkpoint_every < 0L) {
+  stop("--coverage-checkpoint-every must be a nonnegative integer.", call. = FALSE)
+}
+if (!is.finite(coverage_progress_every) || coverage_progress_every < 0L) {
+  stop("--coverage-progress-every must be a nonnegative integer.", call. = FALSE)
 }
 if (!is.finite(logistic_theta) || logistic_theta <= 0 || logistic_theta >= 1) {
   stop("--theta must lie in (0, 1).", call. = FALSE)
@@ -692,6 +771,323 @@ shared_block_oracle_fit <- function(x_analysis, labels, selected_index) {
   )
 }
 
+empirical_sd <- function(x) {
+  x <- as.numeric(x)
+  sqrt(mean((x - mean(x))^2))
+}
+
+build_oracle_margin_transform <- function(calibration_x, tail_k = NA_integer_) {
+  calibration_x <- as.matrix(calibration_x)
+  n <- nrow(calibration_x)
+  d <- ncol(calibration_x)
+  if (is.na(tail_k)) {
+    tail_k <- min(n - 1L, max(1000L, as.integer(round(0.01 * n))))
+  }
+  if (tail_k < 10L || tail_k >= n) {
+    stop("tail_k must be between 10 and n - 1.", call. = FALSE)
+  }
+
+  sorted <- lapply(seq_len(d), function(j) sort(calibration_x[, j]))
+  threshold <- vapply(sorted, function(z) z[n - tail_k + 1L], numeric(1L))
+  tail_probability <- tail_k / (n + 1)
+  tail_constant <- threshold * tail_probability
+
+  transform <- function(x) {
+    x <- as.matrix(x)
+    if (ncol(x) != d) {
+      stop("x has incompatible dimension for oracle margin transform.", call. = FALSE)
+    }
+    out <- matrix(NA_real_, nrow(x), d)
+    for (j in seq_len(d)) {
+      rank_leq <- findInterval(x[, j], sorted[[j]], rightmost.closed = TRUE)
+      empirical_survival <- (n + 1 - rank_leq) / (n + 1)
+      tail_survival <- tail_constant[j] / pmax(x[, j], .Machine$double.xmin)
+      survival <- empirical_survival
+      use_tail <- x[, j] > threshold[j]
+      survival[use_tail] <- tail_survival[use_tail]
+      survival <- pmin(1, pmax(survival, .Machine$double.xmin))
+      out[, j] <- 1 / survival
+    }
+    colnames(out) <- colnames(x)
+    out
+  }
+
+  list(
+    transform = transform,
+    summary = data.frame(
+      variable = colnames(calibration_x),
+      calibration_n = n,
+      tail_k = tail_k,
+      threshold = threshold,
+      tail_probability = tail_probability,
+      tail_constant = tail_constant,
+      row.names = NULL
+    )
+  )
+}
+
+coverage_point_estimates <- function(fit, ranks = coverage_ranks) {
+  max_rank <- max(ranks)
+  eigen_components <- seq_len(max_rank)
+  eigen_values <- fit$eigenvalues[eigen_components]
+  names(eigen_values) <- paste0("lambda", eigen_components)
+  ave_values <- vapply(
+    ranks,
+    function(p) agca_variation_explained(fit)[p],
+    numeric(1L)
+  )
+  names(ave_values) <- paste0("AVE", ranks)
+  c(
+    tau = sum(fit$eigenvalues),
+    eigen_values,
+    ave_values
+  )
+}
+
+coverage_fit_margin_sample <- function(x, k, mu, p) {
+  threshold <- threshold_directions(x, k = k)
+  fit <- agca_fit(threshold$g, mu = mu, p = p)
+  list(threshold = threshold, fit = fit)
+}
+
+coverage_interval_rows <- function(fit, rep_id, margin, targets, z_crit,
+                                   ranks = coverage_ranks) {
+  u <- fit$u
+  k <- nrow(u)
+  norm2 <- rowSums(u^2)
+  tau_hat <- sum(fit$eigenvalues)
+  variation_explained <- agca_variation_explained(fit)
+  max_rank <- max(ranks)
+
+  make_row <- function(statistic, estimate, influence_values) {
+    sigma_hat <- empirical_sd(influence_values)
+    se <- sigma_hat / sqrt(k)
+    lower <- estimate - z_crit * se
+    upper <- estimate + z_crit * se
+    target <- unname(targets[[statistic]])
+    data.frame(
+      replicate = rep_id,
+      margin = margin,
+      statistic = statistic,
+      k = k,
+      estimate = estimate,
+      target = target,
+      se = se,
+      lower = lower,
+      upper = upper,
+      interval_length = upper - lower,
+      covered = lower <= target && target <= upper,
+      studentized = if (is.finite(se) && se > 0) {
+        (estimate - target) / se
+      } else {
+        NA_real_
+      },
+      row.names = NULL
+    )
+  }
+
+  rows <- list(make_row("tau", tau_hat, norm2))
+  for (j in seq_len(max_rank)) {
+    scores_j <- drop(u %*% fit$loadings[, j])
+    rows[[length(rows) + 1L]] <- make_row(
+      paste0("lambda", j),
+      fit$eigenvalues[j],
+      scores_j^2
+    )
+  }
+
+  for (p in ranks) {
+    ave_hat <- variation_explained[p]
+    projected_norm2 <- rowSums((u %*% fit$loadings[, seq_len(p), drop = FALSE])^2)
+    psi <- (projected_norm2 - ave_hat * norm2) / tau_hat
+    rows[[length(rows) + 1L]] <- make_row(paste0("AVE", p), ave_hat, psi)
+  }
+
+  do.call(rbind, rows)
+}
+
+coverage_summary <- function(intervals) {
+  pieces <- split(intervals, list(intervals$margin, intervals$statistic), drop = TRUE)
+  rows <- lapply(pieces, function(z) {
+    valid <- is.finite(z$lower) & is.finite(z$upper) & is.finite(z$target)
+    covered <- z$covered[valid]
+    estimates <- z$estimate[valid]
+    ses <- z$se[valid]
+    studentized <- z$studentized[valid]
+    coverage <- mean(covered)
+    data.frame(
+      margin = z$margin[1L],
+      statistic = z$statistic[1L],
+      target = z$target[1L],
+      reps = nrow(z),
+      valid_reps = sum(valid),
+      coverage = coverage,
+      coverage_mcse = sqrt(coverage * (1 - coverage) / sum(valid)),
+      mean_estimate = mean(estimates),
+      bias = mean(estimates - z$target[valid]),
+      empirical_sd = sd(estimates),
+      mean_se = mean(ses),
+      se_to_empirical_sd = mean(ses) / sd(estimates),
+      mean_interval_length = mean(z$interval_length[valid]),
+      studentized_mean = mean(studentized, na.rm = TRUE),
+      studentized_sd = sd(studentized, na.rm = TRUE),
+      row.names = NULL
+    )
+  })
+  out <- do.call(rbind, rows)
+  rownames(out) <- NULL
+  out[order(out$statistic, out$margin), , drop = FALSE]
+}
+
+run_oracle_coverage_simulation <- function(file_dir) {
+  z_crit <- qnorm((1 + coverage_conf_level) / 2)
+  tail_fraction <- main_k / main_n
+  max_coverage_rank <- max(coverage_ranks)
+  coverage_population_k <- pmin(
+    coverage_population_n - 1L,
+    pmax(5L, as.integer(round(coverage_population_n * tail_fraction)))
+  )
+
+  files <- c(
+    metadata = file.path(file_dir, "oracle_coverage_metadata.csv"),
+    calibration = file.path(file_dir, "oracle_coverage_margin_calibration.csv"),
+    population_targets = file.path(file_dir, "oracle_coverage_population_targets.csv"),
+    intervals = file.path(file_dir, "oracle_coverage_replicate_intervals.csv"),
+    summary = file.path(file_dir, "oracle_coverage_summary.csv")
+  )
+
+  metadata <- data.frame(
+    coverage_seed = coverage_seed,
+    coverage_reps = coverage_reps,
+    n = main_n,
+    k = main_k,
+    main_rank = p_rank,
+    coverage_ranks = paste(coverage_ranks, collapse = ","),
+    tail_fraction = tail_fraction,
+    population_n = coverage_population_n,
+    population_k = coverage_population_k,
+    population_seed = coverage_population_seed,
+    calibration_n = coverage_calibration_n,
+    calibration_seed = coverage_calibration_seed,
+    calibration_tail_k = if (is.na(coverage_calibration_tail_k)) {
+      NA_integer_
+    } else {
+      coverage_calibration_tail_k
+    },
+    logistic_theta = logistic_theta,
+    finite_tau = finite_tau,
+    axis9_scale = axis9_scale,
+    axis10_scale = axis10_scale,
+    conf_level = coverage_conf_level,
+    z_crit = z_crit,
+    oracle_margin_method = paste(
+      "independent calibration empirical CDF with Pareto tail extrapolation"
+    )
+  )
+  write.csv(metadata, files[["metadata"]], row.names = FALSE)
+
+  message("Calibrating oracle margins with n = ", coverage_calibration_n)
+  calibration <- with_seed(coverage_calibration_seed, simulate_standard_10d(coverage_calibration_n))
+  oracle_transform <- build_oracle_margin_transform(
+    calibration$x,
+    tail_k = coverage_calibration_tail_k
+  )
+  write.csv(oracle_transform$summary, files[["calibration"]], row.names = FALSE)
+
+  mu <- canonical_anchor(10L)
+  message(
+    "Estimating oracle coverage population target with n = ",
+    coverage_population_n,
+    " and k = ",
+    coverage_population_k
+  )
+  population <- with_seed(coverage_population_seed, simulate_standard_10d(coverage_population_n))
+  population_oracle_x <- oracle_transform$transform(population$x)
+  population_fit <- coverage_fit_margin_sample(
+    population_oracle_x,
+    k = coverage_population_k,
+    mu = mu,
+    p = max_coverage_rank
+  )$fit
+  targets <- coverage_point_estimates(population_fit, ranks = coverage_ranks)
+  write.csv(
+    data.frame(statistic = names(targets), target = unname(targets), row.names = NULL),
+    files[["population_targets"]],
+    row.names = FALSE
+  )
+
+  message(
+    "Running ",
+    coverage_reps,
+    " oracle coverage replicates with n = ",
+    main_n,
+    " and k = ",
+    main_k
+  )
+  set.seed(coverage_seed)
+  interval_list <- vector("list", coverage_reps)
+  for (rep_id in seq_len(coverage_reps)) {
+    observations <- simulate_standard_10d(main_n)
+    oracle_x <- oracle_transform$transform(observations$x)
+    rank_x <- rank_pareto_transform(observations$x)
+
+    oracle_fit <- coverage_fit_margin_sample(
+      oracle_x,
+      k = main_k,
+      mu = mu,
+      p = max_coverage_rank
+    )$fit
+    rank_fit <- coverage_fit_margin_sample(
+      rank_x,
+      k = main_k,
+      mu = mu,
+      p = max_coverage_rank
+    )$fit
+
+    interval_list[[rep_id]] <- rbind(
+      coverage_interval_rows(
+        oracle_fit,
+        rep_id = rep_id,
+        margin = "oracle",
+        targets = targets,
+        z_crit = z_crit,
+        ranks = coverage_ranks
+      ),
+      coverage_interval_rows(
+        rank_fit,
+        rep_id = rep_id,
+        margin = "rank",
+        targets = targets,
+        z_crit = z_crit,
+        ranks = coverage_ranks
+      )
+    )
+
+    if (coverage_progress_every > 0L && rep_id %% coverage_progress_every == 0L) {
+      message("Completed oracle coverage replicate ", rep_id, " / ", coverage_reps)
+    }
+    if (coverage_checkpoint_every > 0L && rep_id %% coverage_checkpoint_every == 0L) {
+      write.csv(
+        do.call(rbind, interval_list[seq_len(rep_id)]),
+        files[["intervals"]],
+        row.names = FALSE
+      )
+    }
+  }
+
+  intervals <- do.call(rbind, interval_list)
+  summary <- coverage_summary(intervals)
+  write.csv(intervals, files[["intervals"]], row.names = FALSE)
+  write.csv(summary, files[["summary"]], row.names = FALSE)
+
+  list(
+    targets = targets,
+    intervals = intervals,
+    summary = summary,
+    files = files
+  )
+}
+
 save_pdf <- function(file, plot_fun, width = 6.5, height = 5.5) {
   pdf(file, width = width, height = height, bg = "white")
   on.exit(dev.off(), add = TRUE)
@@ -1172,6 +1568,9 @@ write_design_metadata <- function(file) {
     population_n = population_n,
     population_seed = population_seed,
     population_tail_fraction = main_k / main_n,
+    coverage_reps = if (skip_coverage) 0L else coverage_reps,
+    coverage_seed = coverage_seed,
+    coverage_ranks = paste(coverage_ranks, collapse = ","),
     logistic_theta = logistic_theta,
     finite_tau = finite_tau,
     axis9_scale = axis9_scale,
@@ -1317,6 +1716,11 @@ run_standard_10d_simulation <- function() {
     )
   }
 
+  coverage <- NULL
+  if (!skip_coverage) {
+    coverage <- run_oracle_coverage_simulation(output_dir)
+  }
+
   files <- c(
     metadata = metadata_file,
     raw_observations = file.path(output_dir, "raw_observations.csv"),
@@ -1401,6 +1805,16 @@ run_standard_10d_simulation <- function() {
     write.csv(bootstrap$loading_intervals,
               files[["bootstrap_loading_intervals"]], row.names = FALSE)
   }
+  if (!is.null(coverage)) {
+    files <- c(
+      files,
+      oracle_coverage_metadata = coverage$files[["metadata"]],
+      oracle_coverage_margin_calibration = coverage$files[["calibration"]],
+      oracle_coverage_population_targets = coverage$files[["population_targets"]],
+      oracle_coverage_replicate_intervals = coverage$files[["intervals"]],
+      oracle_coverage_summary = coverage$files[["summary"]]
+    )
+  }
 
   plot_files <- c(
     eigenvalues = file.path(output_dir, "eigenvalues.pdf"),
@@ -1481,6 +1895,9 @@ run_standard_10d_simulation <- function() {
   if (!is.null(bootstrap)) {
     cat("  ", files[["bootstrap_summary"]], "\n", sep = "")
   }
+  if (!is.null(coverage)) {
+    cat("  ", files[["oracle_coverage_summary"]], "\n", sep = "")
+  }
   cat("  ", plot_files[["scores"]], "\n", sep = "")
   cat("  ", plot_files[["oracle_alignment"]], "\n", sep = "")
 
@@ -1494,6 +1911,7 @@ run_standard_10d_simulation <- function() {
     oracle_alignment = oracle,
     shared_block_oracle = shared_oracle,
     bootstrap = bootstrap,
+    coverage = coverage,
     files = files,
     plot_files = plot_files
   ))
