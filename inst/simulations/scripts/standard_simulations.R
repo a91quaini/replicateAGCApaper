@@ -1224,7 +1224,7 @@ plot_canonical_variation_ci <- function(variation_intervals, file) {
     )
     legend(
       "bottomright",
-      legend = c("canonical", "95% bootstrap CI"),
+      legend = c("canonical", "bootstrap 95% DI"),
       col = c("black", "gray45"),
       lty = 1,
       pch = c(16, NA),
@@ -1358,7 +1358,7 @@ plot_loading <- function(fit, file, component, loading_intervals = NULL,
         col = "black"
       )
       points(centers, current_intervals$main_loading, pch = 16, cex = 0.55)
-      legend_items <- c(legend_items, "bootstrap 95% CI")
+      legend_items <- c(legend_items, "bootstrap 95% DI")
       legend_lty <- c(legend_lty, 1)
       legend_lwd <- c(legend_lwd, 1.2)
       legend_pch <- c(legend_pch, NA)
