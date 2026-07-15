@@ -371,12 +371,14 @@ plot_ff_spectrum_functionals <- function(file) {
     grid(col = "gray90")
     capped_col <- "#B23A48"
     var_col <- "#3B8C5A"
+    capped_band_col <- grDevices::adjustcolor(capped_col, 0.20)
+    var_band_col <- grDevices::adjustcolor(var_col, 0.20)
     polygon(c(fb$rank, rev(fb$rank)),
             100 * c(fb$capped_lower, rev(fb$capped_upper)),
-            border = NA, col = grDevices::adjustcolor(capped_col, 0.14))
+            border = NA, col = capped_band_col)
     polygon(c(fb$rank, rev(fb$rank)),
             100 * c(fb$var_lower, rev(fb$var_upper)),
-            border = NA, col = grDevices::adjustcolor(var_col, 0.14))
+            border = NA, col = var_band_col)
     lines(fs$rank, 100 * fs$capped_relative_error_agca_mean, type = "b",
           pch = 16, col = capped_col, lwd = 1.6)
     lines(fs$rank, 100 * fs$var_relative_error_agca_mean, type = "b",
