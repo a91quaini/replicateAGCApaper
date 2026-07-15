@@ -394,7 +394,7 @@ plot_ff_spectrum_functionals <- function(file) {
           pch = 16, col = capped_col, lwd = 1.6)
     lines(fs$rank, 100 * fs$var_relative_error_agca_mean, type = "b",
           pch = 17, col = var_col, lwd = 1.6, lty = 2)
-    legend("topright", legend = c("Capped positive loss", "Normalized VaR"),
+    legend("topright", legend = c("Capped portfolio loss", "Normalized VaR"),
            col = c(capped_col, var_col), pch = c(16, 17), lty = c(1, 2),
            lwd = 1.6, bty = "n", cex = 0.78)
     box()
