@@ -400,7 +400,7 @@ analyze_dataset <- function(dataset_name, spec) {
   scores_true <- g_extreme %*% weights
   true_constant <- tail_constant(scores_true, alpha)
   l2_norm <- portfolio_info$l2_norm
-  trigger <- 2 * l2_norm
+  trigger <- rep(0, length(l2_norm))
   cap <- l2_norm
   true_capped <- capped_pareto_mean(scores_true, trigger, cap, alpha)
 
@@ -707,7 +707,7 @@ plot_ff_relative_rank_bootstrap <- function(rank_summary, boot_summary, file) {
       b$capped_lower,
       b$capped_upper,
       "Mean relative error (%)",
-      "Capped excess"
+      "Capped positive loss"
     )
     plot_one(
       z$var_relative_error_agca_mean,
@@ -753,7 +753,7 @@ plot_ff_relative_class_errors <- function(class_summary, file) {
     }
 
     plot_one("capped_relative_error_agca_mean",
-             "Mean relative error (%)", "Capped excess")
+             "Mean relative error (%)", "Capped positive loss")
     plot_one("var_relative_error_agca_mean",
              "Mean relative error (%)", "Normalized VaR")
   }, width = 7.8, height = 2.55)
@@ -780,7 +780,7 @@ plot_osap_relative_rank <- function(rank_summary, file) {
       grid(col = "gray90")
     }
 
-    plot_one("capped_relative_error_agca_mean", "Capped excess")
+    plot_one("capped_relative_error_agca_mean", "Capped positive loss")
     plot_one("var_relative_error_agca_mean", "Normalized VaR")
   }, width = 7.8, height = 2.55)
 }
@@ -817,7 +817,7 @@ plot_osap_relative_class <- function(class_summary, file,
              lty = 1, bty = "n", cex = 0.72)
     }
 
-    plot_one("capped_relative_error_agca_mean", "Capped excess")
+    plot_one("capped_relative_error_agca_mean", "Capped positive loss")
     plot_one("var_relative_error_agca_mean", "Normalized VaR")
   }, width = 7.8, height = 2.55)
 }
@@ -853,11 +853,11 @@ plot_anchor_functional_sensitivity <- function(anchor_summary, file) {
     }
 
     plot_one("ff_2x3_daily", "capped_relative_error_mean",
-             "FF: capped excess")
+             "FF: capped positive loss")
     plot_one("ff_2x3_daily", "var_relative_error_mean",
              "FF: normalized VaR")
     plot_one("osap_daily_quintile_vw", "capped_relative_error_mean",
-             "OSAP: capped excess")
+             "OSAP: capped positive loss")
     plot_one("osap_daily_quintile_vw", "var_relative_error_mean",
              "OSAP: normalized VaR")
   }, width = 7.8, height = 5.1)
@@ -936,7 +936,7 @@ plot_rank_errors(
   rank_summary,
   "capped_error_agca_mean",
   "capped_error_post_mean",
-  "Mean absolute capped-excess error",
+  "Mean absolute capped-loss error",
   file.path(output_dir, "capped_excess_error_by_rank.pdf")
 )
 plot_rank_errors(
@@ -949,7 +949,7 @@ plot_rank_errors(
 plot_class_errors(
   class_summary,
   "capped_error_agca_mean",
-  "Mean absolute capped-excess error",
+  "Mean absolute capped-loss error",
   file.path(output_dir, "capped_excess_error_by_class.pdf")
 )
 plot_class_errors(
