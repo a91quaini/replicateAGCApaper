@@ -349,11 +349,16 @@ plot_ff_spectrum_functionals <- function(file) {
       main = "Anchored variation"
     )
     grid(col = "gray90")
+    spectrum_col <- "#1B6CA8"
+    spectrum_band_col <- "#BFD9EE"
+    spectrum_band_border <- grDevices::adjustcolor(spectrum_col, 0.70)
     polygon(c(bs$rank, rev(bs$rank)), 100 * c(bs$lower, rev(bs$upper)),
-            border = NA, col = grDevices::adjustcolor("#1B6CA8", 0.18))
+            border = NA, col = spectrum_band_col)
+    lines(bs$rank, 100 * bs$lower, col = spectrum_band_border, lwd = 0.65)
+    lines(bs$rank, 100 * bs$upper, col = spectrum_band_border, lwd = 0.65)
     abline(h = c(80, 90), col = "gray70", lty = 3, lwd = 0.9)
     lines(rs$rank, 100 * rs$variation_explained, type = "b", pch = 16,
-          col = "#1B6CA8", lwd = 1.7)
+          col = spectrum_col, lwd = 1.7)
     box()
 
     err_max <- max(100 * c(fb$capped_upper, fb$var_upper,
@@ -371,14 +376,20 @@ plot_ff_spectrum_functionals <- function(file) {
     grid(col = "gray90")
     capped_col <- "#B23A48"
     var_col <- "#3B8C5A"
-    capped_band_col <- grDevices::adjustcolor(capped_col, 0.20)
-    var_band_col <- grDevices::adjustcolor(var_col, 0.20)
+    capped_band_col <- "#EFA9B3"
+    var_band_col <- "#A9D8BA"
+    capped_band_border <- grDevices::adjustcolor(capped_col, 0.80)
+    var_band_border <- grDevices::adjustcolor(var_col, 0.80)
     polygon(c(fb$rank, rev(fb$rank)),
             100 * c(fb$capped_lower, rev(fb$capped_upper)),
             border = NA, col = capped_band_col)
     polygon(c(fb$rank, rev(fb$rank)),
             100 * c(fb$var_lower, rev(fb$var_upper)),
             border = NA, col = var_band_col)
+    lines(fb$rank, 100 * fb$capped_lower, col = capped_band_border, lwd = 0.65)
+    lines(fb$rank, 100 * fb$capped_upper, col = capped_band_border, lwd = 0.65)
+    lines(fb$rank, 100 * fb$var_lower, col = var_band_border, lwd = 0.65)
+    lines(fb$rank, 100 * fb$var_upper, col = var_band_border, lwd = 0.65)
     lines(fs$rank, 100 * fs$capped_relative_error_agca_mean, type = "b",
           pch = 16, col = capped_col, lwd = 1.6)
     lines(fs$rank, 100 * fs$var_relative_error_agca_mean, type = "b",
