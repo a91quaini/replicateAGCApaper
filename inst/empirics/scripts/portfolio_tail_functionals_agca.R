@@ -91,7 +91,7 @@ select_top_k <- function(radius, k) {
     stop("k must be an integer between 1 and the number of observations.",
          call. = FALSE)
   }
-  order(radius, decreasing = TRUE)[seq_len(k)]
+  order(-radius, seq_along(radius))[seq_len(k)]
 }
 
 principal_anchor <- function(g) {

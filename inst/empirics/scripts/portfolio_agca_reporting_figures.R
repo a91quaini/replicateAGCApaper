@@ -89,7 +89,7 @@ pareto_transform <- function(x) {
 }
 
 select_top_k <- function(radius, k) {
-  order(radius, decreasing = TRUE)[seq_len(k)]
+  order(-radius, seq_along(radius))[seq_len(k)]
 }
 
 principal_anchor <- function(g) {

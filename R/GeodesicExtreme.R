@@ -252,7 +252,7 @@ threshold_directions <- function(x, k = NULL, threshold = NULL) {
     if (length(k) != 1L || k < 1L || k > nrow(x) || k != as.integer(k)) {
       stop("k must be an integer between 1 and nrow(x).", call. = FALSE)
     }
-    index <- order(radius, decreasing = TRUE)[seq_len(k)]
+    index <- order(-radius, seq_along(radius))[seq_len(k)]
     threshold <- min(radius[index])
   } else {
     index <- which(radius > threshold)
