@@ -50,7 +50,7 @@ tail_fraction <- 0.05
 alpha <- 1
 random_portfolios <- 250L
 leverage_limit <- 1.5
-functional_bootstrap_reps <- 99L
+functional_bootstrap_reps <- 1000L
 set.seed(20260707)
 
 dataset_specs <- list(

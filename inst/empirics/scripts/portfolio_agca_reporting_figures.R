@@ -48,7 +48,7 @@ stage_manuscript_outputs <- function() {
 sample_start <- as.Date("1973-07-01")
 tail_fraction <- 0.05
 anchor_grid_fractions <- c(0.005, 0.01, 0.015, 0.025, 0.05, 0.075, 0.10)
-bootstrap_reps <- 499L
+bootstrap_reps <- 1000L
 set.seed(20260707)
 
 dataset_specs <- list(
