@@ -206,6 +206,7 @@ fit_summaries <- lapply(names(dataset_specs), function(dataset_name) {
       dataset = dataset_name,
       anchor = anchor,
       rank = rs$rank,
+      residual_risk = rs$residual_risk,
       variation_explained = rs$variation_explained
     )
   }))
@@ -431,6 +432,37 @@ plot_anchor_sensitivity <- function(file) {
   }, width = 7.8, height = 2.55)
 }
 
+plot_anchor_residual_risk <- function(file) {
+  save_pdf(file, function() {
+    par(mfrow = c(1L, 2L), mar = c(3.5, 4.2, 2.0, 0.8),
+        mgp = c(2.1, 0.65, 0), tcl = -0.25)
+    cols <- c(canonical = "#1B6CA8", principal = "#B23A48",
+              mean = "#3B8C5A")
+    for (dataset_name in names(dataset_specs)) {
+      spec <- dataset_specs[[dataset_name]]
+      z <- anchor_summary_all[anchor_summary_all$dataset == dataset_name &
+                                anchor_summary_all$rank <= spec$max_rank, ]
+      ylim <- range(z$residual_risk, finite = TRUE)
+      plot(
+        NA,
+        xlim = c(0, spec$max_rank),
+        ylim = ylim,
+        xlab = "AGCA rank p",
+        ylab = "Residual risk",
+        main = spec$short_label
+      )
+      grid(col = "gray90")
+      for (anchor in names(cols)) {
+        zz <- z[z$anchor == anchor, ]
+        lines(zz$rank, zz$residual_risk, type = "b", pch = 16,
+              col = cols[anchor], lwd = 1.4)
+      }
+      legend("topright", legend = names(cols), col = cols, lty = 1,
+             pch = 16, bty = "n", cex = 0.75)
+    }
+  }, width = 7.8, height = 2.55)
+}
+
 plot_anchor_distance <- function(file) {
   save_pdf(file, function() {
     par(mfrow = c(1L, 2L), mar = c(3.5, 4.2, 2.0, 0.8),
@@ -646,6 +678,8 @@ plot_ff_spectrum_functionals(file.path(output_dir,
                                        "ff_spectrum_functional_summary.pdf"))
 plot_anchor_sensitivity(file.path(output_dir,
                                   "variation_explained_anchor_sensitivity.pdf"))
+plot_anchor_residual_risk(file.path(output_dir,
+                                    "residual_risk_anchor_sensitivity.pdf"))
 plot_anchor_distance(file.path(output_dir, "anchor_distance_by_k.pdf"))
 plot_threshold_sensitivity(file.path(output_dir,
                                      "variation_explained_threshold_sensitivity.pdf"))
