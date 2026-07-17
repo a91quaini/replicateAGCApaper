@@ -6,8 +6,27 @@
 #' @return An absolute path.
 #' @export
 replication_path <- function(...) {
+  is_compendium_root <- function(path) {
+    description <- file.path(path, "DESCRIPTION")
+    file.exists(description) &&
+      grepl("^Package: replicateAGCApaper", readLines(description, n = 1L))
+  }
+
+  root <- normalizePath(getwd(), mustWork = FALSE)
+  repeat {
+    if (is_compendium_root(root)) {
+      return(file.path(root, ...))
+    }
+    parent <- dirname(root)
+    if (identical(parent, root)) {
+      break
+    }
+    root <- parent
+  }
+
   root <- system.file(package = "replicateAGCApaper")
-  if (basename(root) == "inst" && file.exists(file.path(dirname(root), "DESCRIPTION"))) {
+  if (basename(root) == "inst" &&
+      file.exists(file.path(dirname(root), "DESCRIPTION"))) {
     root <- dirname(root)
   }
   if (!nzchar(root)) {

@@ -164,6 +164,7 @@ All stochastic scripts set deterministic seeds.
 | `inst/simulations/scripts/standard_simulations.R` | `20260627` | 10D simulation, population Monte Carlo approximation, bootstrap stability. |
 | `inst/empirics/scripts/portfolio_tail_functionals_agca.R` | `20260707` | Random portfolio functionals and bootstrap summaries. |
 | `inst/empirics/scripts/portfolio_agca_reporting_figures.R` | `20260707` | Bootstrap variation and loading summaries. |
+| `inst/empirics/scripts/portfolio_garch_robustness.R` | none | Deterministic marginal GARCH filtering, declustering, and spectrum diagnostics. |
 
 The simulation scripts accept command-line overrides such as `--seed=`,
 `--bootstrap-reps=`, `--skip-bootstrap`, `--reps=`, `--n=`, and `--k=`.
@@ -176,7 +177,7 @@ Top-level entry points:
 | --- | --- | --- |
 | `scripts/run_data.R` | Rebuild transformed empirical data from raw archives. | `data/empirics/ff/`, `data/empirics/osap/`. |
 | `scripts/run_simulations.R` | Run all standard simulation workflows. | `inst/simulations/results/standard_simulation_output/` and `inst/simulations/results/standard_simulation_output_3d/`. |
-| `scripts/run_empirics.R` | Run portfolio tail-function diagnostics and reporting figures. | `inst/empirics/results/portfolio_tail_functionals_agca/` and `inst/empirics/results/portfolio_agca_reporting/`. |
+| `scripts/run_empirics.R` | Run portfolio tail-function diagnostics, reporting figures, and time-dependence robustness checks. | `inst/empirics/results/portfolio_tail_functionals_agca/` and `inst/empirics/results/portfolio_agca_reporting/`. |
 | `scripts/run_all.R` | Run data preparation, simulations, and empirics in sequence. | All generated data and results. |
 
 Supporting code:
@@ -192,6 +193,7 @@ Supporting code:
 | `inst/simulations/scripts/standard_simulations.R` | Generates the 10D simulation study outputs. |
 | `inst/empirics/scripts/portfolio_tail_functionals_agca.R` | Computes empirical portfolio functional diagnostics. |
 | `inst/empirics/scripts/portfolio_agca_reporting_figures.R` | Produces empirical reporting summaries and figures. |
+| `inst/empirics/scripts/portfolio_garch_robustness.R` | Computes marginal GARCH-filtered and declustered portfolio robustness diagnostics. |
 
 ## Instructions to Replicators
 
@@ -243,19 +245,21 @@ Supporting code:
 
 The empirical scripts copy generated PDFs into
 `../full_paper/R/empirics/empirics_output/` when that manuscript directory
-exists. This staging step is optional for reproducing the package outputs.
+exists. The time-dependence robustness script also stages its manuscript figure into
+`../jrssb_paper/figures/` when that manuscript directory exists. These staging
+steps are optional for reproducing the package outputs.
 
 ## Output Mapping
 
-The current full workflow generates 120 result files: 59 CSV files and 61 PDF
+The current full workflow generates 133 CSV/PDF result files: 70 CSV files and 63 PDF
 files.
 
 | Output path | Produced by | File count | Use |
 | --- | --- | ---: | --- |
-| `inst/simulations/results/standard_simulation_output/` | `inst/simulations/scripts/standard_simulations.R` | 34 | 10D simulation summaries and diagnostic figures. |
+| `inst/simulations/results/standard_simulation_output/` | `inst/simulations/scripts/standard_simulations.R` | 39 | 10D simulation summaries and diagnostic figures. |
 | `inst/simulations/results/standard_simulation_output_3d/` | `inst/simulations/scripts/standard_simulations_3d.R` | 52 | 3D simulation summaries, model comparisons, and finite-sample sensitivity. |
 | `inst/empirics/results/portfolio_tail_functionals_agca/` | `inst/empirics/scripts/portfolio_tail_functionals_agca.R` | 20 | Portfolio functional error summaries and figures. |
-| `inst/empirics/results/portfolio_agca_reporting/` | `inst/empirics/scripts/portfolio_agca_reporting_figures.R` | 14 | Empirical AGCA reporting summaries and figures. |
+| `inst/empirics/results/portfolio_agca_reporting/` | `inst/empirics/scripts/portfolio_agca_reporting_figures.R`; `inst/empirics/scripts/portfolio_garch_robustness.R` | 22 | Empirical AGCA reporting summaries, figures, and time-dependence robustness diagnostics. |
 
 For journal submission, add a manuscript-specific table mapping each paper
 figure, table, or in-text number to the output file above and the script that
