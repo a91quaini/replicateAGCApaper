@@ -7,10 +7,12 @@
 #' @return Invisibly returns `TRUE` when scripts complete.
 #' @export
 run_empirics <- function(scripts = c("all", "agca_reporting", "tail_functionals",
-                                     "garch_robustness")) {
+                                     "garch_robustness", "coexceedances",
+                                     "factor_attribution")) {
   scripts <- match.arg(scripts, several.ok = TRUE)
   if ("all" %in% scripts) {
-    scripts <- c("tail_functionals", "agca_reporting", "garch_robustness")
+    scripts <- c("tail_functionals", "agca_reporting", "garch_robustness",
+                 "coexceedances", "factor_attribution")
   }
   files <- c(
     tail_functionals = replication_file(
@@ -21,6 +23,12 @@ run_empirics <- function(scripts = c("all", "agca_reporting", "tail_functionals"
     ),
     garch_robustness = replication_file(
       "inst", "empirics", "scripts", "portfolio_garch_robustness.R"
+    ),
+    coexceedances = replication_file(
+      "inst", "empirics", "scripts", "portfolio_coexceedances_agca.R"
+    ),
+    factor_attribution = replication_file(
+      "inst", "empirics", "scripts", "portfolio_factor_attribution_agca.R"
     )
   )
   lapply(files[scripts], source, local = new.env(parent = globalenv()), chdir = TRUE)

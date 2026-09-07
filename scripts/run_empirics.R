@@ -3,3 +3,5 @@
 source(file.path("inst", "empirics", "scripts", "portfolio_tail_functionals_agca.R"))
 source(file.path("inst", "empirics", "scripts", "portfolio_agca_reporting_figures.R"))
 source(file.path("inst", "empirics", "scripts", "portfolio_garch_robustness.R"))
+source(file.path("inst", "empirics", "scripts", "portfolio_coexceedances_agca.R"))
+source(file.path("inst", "empirics", "scripts", "portfolio_factor_attribution_agca.R"))
